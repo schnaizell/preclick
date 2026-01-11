@@ -1,25 +1,90 @@
 import { useState } from "react";
 import { scenarios } from "./scenario";
-import type { Scenario, Decision } from "./scenario";
-import "./index.css";
+import type { Scenario, Decision, Outcome } from "./scenario";
+import { getDeterministicRandom } from "./simulate";
 
 function App() {
-  const [currentScenarioId, setCurrentScenarioId] = useState(
-    scenarios[0].id
+  const [behavior, setBehavior] = useState({
+    risky: 0,
+    cautious: 0,
+  });
+
+  const [currentScenarioId, setCurrentScenarioId] = useState(scenarios[0].id);
+
+  const [selectedDecision, setSelectedDecision] = useState<Decision | null>(
+    null
   );
-  const [selectedDecision, setSelectedDecision] =
-    useState<Decision | null>(null);
+
+  const [selectedOutcome, setSelectedOutcome] = useState<Outcome | null>(null);
 
   const currentScenario: Scenario =
-    scenarios.find((s) => s.id === currentScenarioId)!;
+    scenarios.find((s) => s.id === currentScenarioId) ?? scenarios[0];
 
   const handleDecisionSelect = (decision: Decision) => {
+    const index = Math.floor(
+      getDeterministicRandom() * decision.outcomes.length
+    );
+    const chosenOutcome = decision.outcomes[index];
+
     setSelectedDecision(decision);
+    setSelectedOutcome(chosenOutcome);
+
+    // เรียนรู้พฤติกรรมผู้เล่น
+    if (decision.impact.risk === "สูง") {
+      setBehavior((b) => ({ ...b, risky: b.risky + 1 }));
+    }
+    if (decision.impact.risk === "ต่ำ") {
+      setBehavior((b) => ({ ...b, cautious: b.cautious + 1 }));
+    }
+  };
+
+  const retryOutcome = () => {
+    if (!selectedDecision || !selectedOutcome) return;
+
+    const outcomes = selectedDecision.outcomes;
+
+    if (outcomes.length <= 1) return;
+
+    let next: Outcome = selectedOutcome;
+
+    while (next === selectedOutcome) {
+      const index = Math.floor(getDeterministicRandom() * outcomes.length);
+      next = outcomes[index];
+    }
+
+    setSelectedOutcome(next);
+  };
+
+  const randomScenario = () => {
+    const pool: Scenario[] = [];
+
+    scenarios.forEach((s) => {
+      // ถ้าผู้เล่นสายเสี่ยง → เพิ่มน้ำหนักให้ finance
+      if (behavior.risky > behavior.cautious && s.tags?.includes("finance")) {
+        pool.push(s, s, s);
+      } else {
+        pool.push(s);
+      }
+    });
+
+    if (pool.length === 0) return;
+
+    let next = currentScenario;
+
+    if (pool.length > 1) {
+      while (next.id === currentScenario.id) {
+        const index = Math.floor(getDeterministicRandom() * pool.length);
+        next = pool[index];
+      }
+    }
+
+    setCurrentScenarioId(next.id);
+    setSelectedDecision(null);
+    setSelectedOutcome(null);
   };
 
   return (
     <div className="app-container">
-      {/* Header */}
       <header className="header">
         <h1>PreClick</h1>
         <p className="subtitle">
@@ -27,16 +92,17 @@ function App() {
         </p>
       </header>
 
-      {/* Scenario Switcher */}
       <div className="scenario-switcher">
-        <label>
-          <strong>สถานการณ์:</strong>{" "}
+        <label htmlFor="scenario-select">
+          <strong>เลือกสถานการณ์:</strong>
         </label>
         <select
+          id="scenario-select"
           value={currentScenarioId}
           onChange={(e) => {
             setCurrentScenarioId(e.target.value);
             setSelectedDecision(null);
+            setSelectedOutcome(null);
           }}
         >
           {scenarios.map((scenario) => (
@@ -47,71 +113,60 @@ function App() {
         </select>
       </div>
 
-      {/* Scenario Context */}
       <section className="panel">
-        <h2>{currentScenario.title}</h2>
+        <div className="scenario-header">
+          <h2>{currentScenario.title}</h2>
+          <button onClick={randomScenario}>🔀 สถานการณ์ใหม่</button>
+        </div>
+
         <p>{currentScenario.context}</p>
 
-        <div className="signal-list">
-          <strong>สัญญาณที่สังเกตได้:</strong>
-          <ul>
-            {currentScenario.signals.map((signal) => (
-              <li key={signal}>{signal}</li>
-            ))}
-          </ul>
-        </div>
+        <strong>สัญญาณที่ควรสังเกต:</strong>
+        <ul>
+          {currentScenario.signals.map((signal) => (
+            <li key={signal}>{signal}</li>
+          ))}
+        </ul>
       </section>
 
-      {/* Decisions */}
-      <section>
-        <h3>คุณคิดว่าจะทำอย่างไร?</h3>
+      <section className="panel">
+        <h3>ถ้าเป็นคุณ จะเลือกแบบไหน?</h3>
         {currentScenario.decisions.map((decision) => (
           <button
             key={decision.id}
             onClick={() => handleDecisionSelect(decision)}
-            className={`decision-btn ${
-              selectedDecision?.id === decision.id ? "active" : ""
-            }`}
           >
             {decision.label}
           </button>
         ))}
       </section>
 
-      {/* Explanation */}
-      {selectedDecision && (
+      {selectedDecision && selectedOutcome && (
         <section className="panel decision-summary">
-          <h3>ภาพรวมของการตัดสินใจ</h3>
+          <h3>สิ่งที่อาจเกิดขึ้น</h3>
 
           <p>
-            <strong>เหตุผลของการเลือกนี้:</strong>{" "}
-            {selectedDecision.explanation}
+            <strong>สิ่งที่เกิดขึ้น:</strong> {selectedOutcome.description}
           </p>
 
-          {/* AI Explanation */}
-          <div className="ai-box">
-            <strong>🤖 มุมมองจาก AI:</strong>
-            <p>{selectedDecision.aiExplanation}</p>
-          </div>
+          <p>
+            <strong>ผลต่อชีวิต:</strong> {selectedOutcome.lifeImpact}
+          </p>
 
-          {/* Impact Summary */}
+          <p>
+            <strong>ผลต่อทรัพย์สิน:</strong> {selectedOutcome.assetImpact}
+          </p>
+
           <div className="impact">
-            <strong>สิ่งที่เปลี่ยนแปลงตามมา:</strong>
+            <strong>ภาพรวมของการตัดสินใจ</strong>
             <ul>
-              <li>
-                ระดับความน่าเชื่อถือ:{" "}
-                {selectedDecision.impact.trust}
-              </li>
-              <li>
-                ระดับความเสี่ยง:{" "}
-                {selectedDecision.impact.risk}
-              </li>
-              <li>
-                ความมั่นใจในการตัดสินใจ:{" "}
-                {selectedDecision.impact.confidence}
-              </li>
+              <li>ความน่าเชื่อถือ: {selectedDecision.impact.trust}</li>
+              <li>ความเสี่ยง: {selectedDecision.impact.risk}</li>
+              <li>ความมั่นใจ: {selectedDecision.impact.confidence}</li>
             </ul>
           </div>
+
+          <button onClick={retryOutcome}>🔄 ลองดูอีกผลลัพธ์หนึ่ง</button>
         </section>
       )}
     </div>
