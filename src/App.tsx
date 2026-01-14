@@ -59,7 +59,6 @@ function App() {
     const pool: Scenario[] = [];
 
     scenarios.forEach((s) => {
-      // ถ้าผู้เล่นสายเสี่ยง → เพิ่มน้ำหนักให้ finance
       if (behavior.risky > behavior.cautious && s.tags?.includes("finance")) {
         pool.push(s, s, s);
       } else {
