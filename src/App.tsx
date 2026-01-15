@@ -5,8 +5,8 @@ import { getDeterministicRandom } from "./simulate";
 
 function App() {
   const [behavior, setBehavior] = useState({
-    risky: 0,
-    cautious: 0,
+    riskyCount: 0,
+    cautiousCount: 0,
   });
 
   const [currentScenarioId, setCurrentScenarioId] = useState(scenarios[0].id);
@@ -31,10 +31,10 @@ function App() {
 
     // เรียนรู้พฤติกรรมผู้เล่น
     if (decision.impact.risk === "สูง") {
-      setBehavior((b) => ({ ...b, risky: b.risky + 1 }));
+      setBehavior((b) => ({ ...b, riskyCount: b.riskyCount + 1 }));
     }
     if (decision.impact.risk === "ต่ำ") {
-      setBehavior((b) => ({ ...b, cautious: b.cautious + 1 }));
+      setBehavior((b) => ({ ...b, cautiousCount: b.cautiousCount + 1 }));
     }
   };
 
@@ -48,6 +48,7 @@ function App() {
     let next: Outcome = selectedOutcome;
 
     while (next === selectedOutcome) {
+      // Use deterministic randomness for consistent decision outcomes
       const index = Math.floor(getDeterministicRandom() * outcomes.length);
       next = outcomes[index];
     }
@@ -56,10 +57,15 @@ function App() {
   };
 
   const randomScenario = () => {
+    // Select next scenario with light bias based on observed user behavior
+    // (intentional: not adaptive learning, only soft exposure)
     const pool: Scenario[] = [];
 
     scenarios.forEach((s) => {
-      if (behavior.risky > behavior.cautious && s.tags?.includes("finance")) {
+      if (
+        behavior.riskyCount > behavior.cautiousCount &&
+        s.tags?.includes("finance")
+      ) {
         pool.push(s, s, s);
       } else {
         pool.push(s);
