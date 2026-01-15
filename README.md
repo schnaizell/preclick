@@ -44,8 +44,8 @@ Sometimes things go wrong. Sometimes people get lucky.
 
 The system observes user behavior and adapts future scenarios accordingly.
 
-Users who take higher risks tend to face more financially dangerous situations.
-More cautious users are challenged with subtler forms of manipulation.
+Users who take higher risks tend to face more financially dangerous situations,
+while more cautious users are challenged with subtler forms of manipulation.
 
 Over time, PreClick becomes a **living decision simulator**, not a static quiz.
 
@@ -61,6 +61,8 @@ It does not assume users are careless or uninformed.
 It assumes they are human.
 
 By modeling hesitation, trust, urgency, and risk-taking behavior, PreClick explores how real decisions are made — and how people can learn to pause before costly mistakes.
+
+Instead of scoring answers as right or wrong, PreClick models consequences and uncertainty.
 
 ---
 
@@ -134,6 +136,7 @@ The goal is to understand how real people think in moments where mistakes are ex
 ## Current status
 
 PreClick is an early prototype under active development.
+The goal at this stage is learning and iteration, not feature completeness.
 
 The current focus is on:
 
