@@ -147,6 +147,8 @@ The current focus is on:
 
 Future iterations may explore deeper analytics, personalization, and educational feedback loops.
 
+---
+
 ## Tech stack
 
 - React
